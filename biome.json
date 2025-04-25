@@ -1,0 +1,79 @@
+{
+  "$schema": "../node_modules/@biomejs/biome/configuration_schema.json",
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on",
+        "recommended": true,
+        "useSortedAttributes": "on",
+        "useSortedKeys": "on",
+        "useSortedProperties": "on"
+      }
+    },
+    "enabled": true
+  },
+  "css": { "formatter": { "enabled": true }, "linter": { "enabled": true } },
+  "files": {
+    "includes": [
+      "!**/*.d.ts",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/.expo",
+      "!**/build",
+      "**/*.{ts,tsx,js,jsx,json,css,html}"
+    ]
+  },
+  "formatter": {
+    "attributePosition": "auto",
+    "bracketSameLine": true,
+    "bracketSpacing": true,
+    "enabled": true,
+    "expand": "never",
+    "formatWithErrors": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 100
+  },
+  "html": { "formatter": { "enabled": true } },
+  "javascript": {
+    "formatter": { "semicolons": "always" },
+    "globals": ["React", "Bun", "Todo", "NotWorth"]
+  },
+  "json": {
+    "assist": { "enabled": true },
+    "formatter": { "enabled": true, "expand": "never", "indentStyle": "space", "indentWidth": 2 }
+  },
+  "linter": {
+    "domains": { "react": "all", "test": "all" },
+    "enabled": true,
+    "rules": {
+      "a11y": { "recommended": true },
+      "complexity": { "recommended": true },
+      "correctness": {
+        "noUndeclaredDependencies": "off",
+        "noUnusedImports": { "fix": "safe", "level": "error" },
+        "recommended": true,
+        "useImportExtensions": "off"
+      },
+      "nursery": {
+        "noFloatingPromises": "on",
+        "noImportCycles": "on",
+        "recommended": true,
+        "useExplicitType": "off",
+        "useSortedClasses": { "fix": "safe", "level": "warn", "options": {} }
+      },
+      "performance": { "noBarrelFile": "off", "recommended": true },
+      "security": { "recommended": true },
+      "style": {
+        "noDefaultExport": "off",
+        "noImplicitBoolean": "off",
+        "recommended": true,
+        "useBlockStatements": "off",
+        "useFilenamingConvention": "off",
+        "useNamingConvention": "off"
+      },
+      "suspicious": { "noExplicitAny": "off", "noReactSpecificProps": "off", "recommended": true }
+    }
+  }
+}
