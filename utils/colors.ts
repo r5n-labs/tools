@@ -1,4 +1,5 @@
-const isColorEnabled = !process.env.NO_COLOR && (process.env.FORCE_COLOR || process.stdout.isTTY);
+const isColorEnabled =
+  !process.env.NO_COLOR && (process.env.FORCE_COLOR || (process.stdout?.isTTY ?? false));
 
 const baseColors = ["blue", "cyan", "gray", "green", "magenta", "red", "white", "yellow"] as const;
 const baseDecorations = ["bold", "dim", "italic", "underline", "reset"] as const;
@@ -25,11 +26,13 @@ function colorize(colorCode: string) {
   return (text: string) => (isColorEnabled ? `${colorCode}${text}${ansiCodes.reset}` : text);
 }
 
-function getColorCode({ bright = false, color }: { bright?: boolean; color: string }) {
+function getColorCode({ bright = false, color = "white" }: { bright?: boolean; color?: string }) {
   const baseColor = Bun.color(color, "ansi");
-  if (!baseColor) return "";
+  if (!baseColor || typeof baseColor !== "string") return "";
 
-  return bright ? brightColorMap[baseColor] || baseColor : baseColor;
+  const brightColor = bright && baseColor in brightColorMap ? brightColorMap[baseColor] : baseColor;
+
+  return brightColor || baseColor;
 }
 
 const colorDecorations = baseColors.reduce(

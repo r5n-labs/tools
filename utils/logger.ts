@@ -7,6 +7,45 @@ export enum LogLevel {
   ERROR = 3,
 }
 
+type Logger = {
+  debug: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  child: (childPrefix: string) => ReturnType<typeof createLogger>;
+};
+
+const LOG_CONFIGS = [
+  {
+    color: colors.dim,
+    console: console.log,
+    label: "DEBUG",
+    level: LogLevel.DEBUG,
+    method: "debug",
+  },
+  {
+    color: colors.cyan,
+    console: console.info,
+    label: "INFO ",
+    level: LogLevel.INFO,
+    method: "info",
+  },
+  {
+    color: colors.yellow,
+    console: console.warn,
+    label: "WARN ",
+    level: LogLevel.WARN,
+    method: "warn",
+  },
+  {
+    color: colors.red,
+    console: console.error,
+    label: "ERROR",
+    level: LogLevel.ERROR,
+    method: "error",
+  },
+] as const;
+
 export const createLogger = ({
   prefix = "",
   level = process.env.DEBUG ? LogLevel.DEBUG : LogLevel.INFO,
@@ -14,45 +53,38 @@ export const createLogger = ({
   prefix?: string;
   level?: LogLevel;
 } = {}) => {
-  function debug(...args: unknown[]) {
-    if (level <= LogLevel.DEBUG) {
-      const message = args.join(" ");
-      console.log(format({ level: colors.dim("DEBUG"), message, prefix }));
-    }
+  const logger = {} as Logger;
+
+  // Generate methods at creation time - zero runtime overhead
+  for (const config of LOG_CONFIGS) {
+    logger[config.method] =
+      level <= config.level
+        ? (...args: unknown[]) => {
+            const message = args.map((arg) => String(arg ?? "")).join(" ");
+            config.console(format({ level: config.color(config.label), message, prefix }));
+          }
+        : () => {}; // No-op function for disabled levels
   }
 
-  function info(...args: unknown[]) {
-    if (level <= LogLevel.INFO) {
-      const message = args.join(" ");
-      console.info(format({ level: colors.cyan("INFO "), message, prefix }));
-    }
-  }
+  logger.child = (childPrefix: string) =>
+    createLogger({ level, prefix: `${prefix}:${childPrefix}` });
 
-  function warn(...args: unknown[]) {
-    if (level <= LogLevel.WARN) {
-      const message = args.join(" ");
-      console.warn(format({ level: colors.yellow("WARN "), message, prefix }));
-    }
-  }
-
-  function error(...args: unknown[]) {
-    if (level <= LogLevel.ERROR) {
-      const message = args.join(" ");
-      console.error(format({ level: colors.red("ERROR"), message, prefix }));
-    }
-  }
-
-  function child(childPrefix: string) {
-    return createLogger({ level, prefix: `${prefix}:${childPrefix}` });
-  }
-
-  return { child, debug, error, info, warn };
+  return logger as Logger;
 };
 
 export const logger = createLogger();
 
 function format({ prefix, level, message }: { prefix: string; level: string; message: string }) {
-  const timestamp = new Date().toISOString().split("T")[1]?.split(".")[0] || "";
+  let timestamp = "";
+  try {
+    const isoString = new Date().toISOString();
+    const timePart = isoString.split("T")[1];
+    if (timePart) {
+      timestamp = timePart.split(".")[0] || "";
+    }
+  } catch {
+    timestamp = "00:00:00";
+  }
   const formatPrefix = prefix ? `[${prefix}] ` : "";
-  return `${colors.dim(timestamp || "")} ${level} ${formatPrefix}${message}`;
+  return `${colors.dim(timestamp)} ${level} ${formatPrefix}${message}`;
 }
