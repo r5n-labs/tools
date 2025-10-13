@@ -36,7 +36,7 @@
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
     "target": "ESNext",
-    "types": ["bun-types"],
+    "types": ["@types/bun"],
     "useDefineForClassFields": true,
     "verbatimModuleSyntax": true
   },

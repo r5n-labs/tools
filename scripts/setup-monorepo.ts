@@ -29,6 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
+          ref: \${{ github.head_ref }}
+        with:
           submodules: recursive
 
       - name: Setup bun & install dependencies
@@ -42,6 +45,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: \${{ github.head_ref }}
         with:
           submodules: recursive
 
