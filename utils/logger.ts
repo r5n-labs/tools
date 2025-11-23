@@ -1,6 +1,6 @@
 import { colors } from "./colors";
 
-export enum LogLevel {
+enum LogLevel {
   DEBUG = 0,
   INFO = 1,
   WARN = 2,
