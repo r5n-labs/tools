@@ -48,6 +48,7 @@
     "domains": { "react": "all", "test": "all" },
     "enabled": true,
     "rules": {
+      "complexity": { "noStaticOnlyClass": "off" },
       "correctness": {
         "noUndeclaredDependencies": "off",
         "noUnusedImports": { "fix": "safe", "level": "error" },
