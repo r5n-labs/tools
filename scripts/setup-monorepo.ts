@@ -1,7 +1,8 @@
 import { join } from "node:path";
-import { createLogger } from "../utils/logger";
 
-const logger = createLogger({ prefix: "setup-monorepo" });
+const PREFIX = "[setup-monorepo]";
+const log = (...args: unknown[]) => console.log(PREFIX, ...args);
+const logError = (...args: unknown[]) => console.error(PREFIX, ...args);
 
 const BIOME_CONTENT = `{
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
@@ -141,13 +142,13 @@ async function setupConfigFiles() {
     const exists = await file.exists();
 
     if (exists) {
-      logger.info(`${key} already exists`);
+      log(`${key} already exists`);
       continue;
     }
 
     await Bun.$`mkdir -p ${{ raw: path.split("/").slice(0, -1).join("/") }}`.quiet();
     await Bun.write(path, content);
-    logger.info(`✅ Created ${path}`);
+    log(`✅ Created ${path}`);
   }
 }
 
@@ -156,12 +157,12 @@ async function readOrCreatePackageJson() {
   const exists = await packageJsonFile.exists();
 
   if (exists) {
-    logger.info("Found existing package.json");
+    log("Found existing package.json");
     return await packageJsonFile.json();
   }
 
   const folderName = monorepoRoot.split("/").pop() || "monorepo";
-  logger.info("Creating new package.json");
+  log("Creating new package.json");
 
   return {
     license: "Apache-2.0",
@@ -196,11 +197,11 @@ async function runSetupCommands() {
 
   for (const [key, { command, description }] of Object.entries(commands)) {
     try {
-      logger.info(`Running ${key}: ${description}`);
+      log(`Running ${key}: ${description}`);
       await Bun.$`${{ raw: command }}`.cwd(monorepoRoot);
-      logger.info(`✅ ${key} completed`);
-    } catch (error) {
-      logger.error(`❌ ${key} failed: ${error instanceof Error ? error.message : String(error)}`);
+      log(`✅ ${key} completed`);
+    } catch (err) {
+      logError(`❌ ${key} failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 }
@@ -229,14 +230,14 @@ async function main() {
   };
 
   await Bun.write(packageJsonPath, `${JSON.stringify(updatedPackageJson, null, 2)}\n`);
-  logger.info("✅ package.json updated successfully!");
+  log("✅ package.json updated successfully!");
 
   await setupConfigFiles();
   await runSetupCommands();
-  logger.info("✅ Monorepo setup completed");
+  log("✅ Monorepo setup completed");
 }
 
-main().catch((error) => {
-  logger.error("Failed to setup monorepo:", error);
+main().catch((err) => {
+  logError("Failed to setup monorepo:", err);
   process.exit(1);
 });
