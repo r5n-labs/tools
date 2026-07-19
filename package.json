@@ -2,6 +2,6 @@
   "license": "Apache-2.0",
   "name": "@r5n/tools",
   "private": true,
-  "scripts": { "setup-monorepo": "bun run scripts/setup-monorepo.ts" },
+  "scripts": { "setup-monorepo": "bun run scripts/setup-monorepo.ts", "type-check": "tsc --noEmit" },
   "type": "module"
 }

@@ -15,7 +15,7 @@
   "files": {
     "includes": [
       "**/*.{ts,tsx,js,jsx,json,css,html}",
-      "!**/d.ts",
+      "!**/*.d.ts",
       "!**/node_modules",
       "!**/build",
       "!**/dist",
@@ -56,12 +56,11 @@
       },
       "nursery": {
         "noFloatingPromises": "on",
-        "noImportCycles": "on",
         "useExplicitType": "off",
         "useSortedClasses": { "fix": "safe", "level": "warn", "options": {} }
       },
       "performance": { "noBarrelFile": "off" },
-      "recommended": true,
+      "preset": "recommended",
       "style": {
         "noDefaultExport": "off",
         "noImplicitBoolean": "off",
@@ -79,7 +78,7 @@
         "useSelfClosingElements": "error",
         "useSingleVarDeclarator": "error"
       },
-      "suspicious": { "noExplicitAny": "off", "noReactSpecificProps": "off" }
+      "suspicious": { "noExplicitAny": "off", "noImportCycles": "on", "noReactSpecificProps": "off" }
     }
   },
   "root": false
