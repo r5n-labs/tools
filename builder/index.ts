@@ -13,6 +13,36 @@ interface BuilderOptions {
   updateReadme?: boolean;
 }
 
+interface PackageJson {
+  bin?: Record<string, string> | string;
+  exports?: string | Record<string, string | Record<string, unknown>>;
+  main?: string;
+  name?: string;
+  scripts?: Record<string, string>;
+  types?: string;
+}
+
+function resolveEntrypoints(exportsField: PackageJson["exports"]): string[] {
+  if (!exportsField) return [];
+  if (typeof exportsField === "string") return [exportsField];
+
+  const entrypoints: string[] = [];
+
+  for (const value of Object.values(exportsField)) {
+    if (typeof value === "string") {
+      entrypoints.push(value);
+      continue;
+    }
+
+    if (typeof value !== "object" || value === null) continue;
+
+    const resolved = [value.bun, value.import, value.default].find((candidate) => typeof candidate === "string");
+    if (typeof resolved === "string") entrypoints.push(resolved);
+  }
+
+  return entrypoints;
+}
+
 async function updateReadmeBadge(sizeKB: number, packageDir: string) {
   const readmePath = resolve(packageDir, "README.md");
 
@@ -24,10 +54,10 @@ async function updateReadmeBadge(sizeKB: number, packageDir: string) {
   const file = Bun.file(readmePath);
   let content = await file.text();
 
-  const sizeBadgePattern = /https:\/\/img\.shields\.io\/badge\/bundle[_%20]size-~?\d+KB-green\.svg/g;
+  const sizeBadgePattern = /https:\/\/img\.shields\.io\/badge\/bundle(?:_|%20)size-~?\d+KB-green\.svg/g;
   const newBadge = `https://img.shields.io/badge/bundle_size-~${sizeKB}KB-green.svg`;
 
-  if (!sizeBadgePattern.test(content)) {
+  if (!content.match(sizeBadgePattern)) {
     console.warn(`⚠️  No bundle size badge found in ${readmePath}`);
     return;
   }
@@ -51,33 +81,32 @@ export async function bunPackageBuilder({
   type?: "cli";
   entrypoints?: string[];
 }) {
-  try {
-    await Bun.$`bun run type-check`;
-  } catch (_e) {
-    console.error("\n❌ Type check failed. Aborting build.");
-    process.exit(1);
+  const pkgJson = (await Bun.file("package.json").json()) as PackageJson;
+  const packageName = pkgJson.name || "unknown-package";
+
+  if (pkgJson.scripts?.["type-check"]) {
+    try {
+      await Bun.$`bun run type-check`;
+    } catch (e) {
+      throw new Error(`Type check failed for ${packageName}`, { cause: e });
+    }
   }
 
-  const pkgJson = (await Bun.file("package.json").json()) as {
-    types: string;
-    main: string;
-    exports: Record<string, { bun: string }>;
-    name: string;
-  };
+  // cli convention: "types" points at the TS source entrypoint to bundle, "main" at the built binary to chmod.
+  if (type === "cli" && !pkgJson.types) {
+    throw new Error(
+      `cli build for ${packageName} requires "types" in package.json to point at the TS source entrypoint`,
+    );
+  }
 
-  const parsedEntrypoints =
-    type === "cli"
-      ? [`./${pkgJson.types}`]
-      : Object.entries(pkgJson.exports)
-          .map(([, { bun }]) => bun)
-          .filter(Boolean);
+  const parsedEntrypoints = type === "cli" ? [`./${pkgJson.types}`] : resolveEntrypoints(pkgJson.exports);
   const entrypoints = options.entrypoints || parsedEntrypoints;
 
   if (!entrypoints || entrypoints.length === 0) {
-    throw new Error("No entrypoints provided for build");
+    throw new Error(
+      `No entrypoints provided for build — pass options.entrypoints, define them in package.json "exports", or set type: "cli"`,
+    );
   }
-
-  const packageName = pkgJson.name || "unknown-package";
 
   const build = await Bun.build({
     entrypoints,
@@ -85,6 +114,7 @@ export async function bunPackageBuilder({
     outdir: "./dist",
     packages,
     sourcemap: "none",
+    target: "bun",
     ...options,
   });
 
@@ -120,6 +150,12 @@ export async function bunPackageBuilder({
   }
 
   if (process.platform !== "win32" && type === "cli") {
+    if (!pkgJson.main || !existsSync(pkgJson.main)) {
+      throw new Error(
+        `cli build for ${packageName} requires "main" in package.json to point at the built binary, got "${pkgJson.main}"`,
+      );
+    }
+
     await Bun.$`chmod +x ./${pkgJson.main}`.quiet();
   }
 
